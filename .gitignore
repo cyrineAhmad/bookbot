@@ -1,0 +1,34 @@
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+*.env
+!.env.example
+
+# Python (Backend)
+bookbot-backend/venv/
+bookbot-backend/__pycache__/
+bookbot-backend/**/__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Node.js (Frontend)
+bookbot-frontend/node_modules/
+bookbot-frontend/dist/
+bookbot-frontend/build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Logs
+*.log
+
+# Database
+*.sqlite
+*.db
