@@ -332,7 +332,7 @@ const Books = () => {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
             {isAdmin ? "Manage Books" : "Browse Books"}
           </h1>
-          <p className="mt-1 text-muted-foreground">{filtered.length} books available</p>
+          {!booksLoading && <p className="mt-1 text-muted-foreground">{filtered.length} books available</p>}
         </div>
         {isAdmin ? (
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
