@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Bot, Lightbulb, BookOpen, TrendingUp, Search, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { aiService } from "@/services/api";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface Message {
   role: "user" | "assistant";
@@ -77,7 +79,35 @@ const AIAssistant = () => {
                     ? "bg-primary text-primary-foreground rounded-br-sm"
                     : "bg-secondary text-secondary-foreground rounded-bl-sm"
                 }`}>
-                  {msg.content}
+                  {msg.role === "assistant" ? (
+                    <div className="prose prose-sm max-w-none dark:prose-invert prose-p:leading-relaxed prose-pre:p-0 prose-headings:mt-3 prose-headings:mb-2 prose-li:my-1">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                          ul: ({ children }) => <ul className="my-2 ml-4 list-disc space-y-1">{children}</ul>,
+                          ol: ({ children }) => <ol className="my-2 ml-4 list-decimal space-y-1">{children}</ol>,
+                          li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                          strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+                          h1: ({ children }) => <h1 className="text-xl font-bold mb-2">{children}</h1>,
+                          h2: ({ children }) => <h2 className="text-lg font-bold mb-2">{children}</h2>,
+                          h3: ({ children }) => <h3 className="text-base font-bold mb-1">{children}</h3>,
+                          code: ({ children, className }) => {
+                            const isInline = !className;
+                            return isInline ? (
+                              <code className="bg-muted px-1 py-0.5 rounded text-xs">{children}</code>
+                            ) : (
+                              <code className={className}>{children}</code>
+                            );
+                          },
+                        }}
+                      >
+                        {msg.content}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
+                    msg.content
+                  )}
                 </div>
               </div>
             ))}
