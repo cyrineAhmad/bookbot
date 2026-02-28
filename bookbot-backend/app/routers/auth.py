@@ -17,7 +17,6 @@ async def get_profile(profile=Depends(get_current_profile)):
         "email": profile.email,
         "full_name": profile.full_name,
         "role": profile.role,
-        "avatar_url": profile.avatar_url,
     }
 
 @router.get("/token")

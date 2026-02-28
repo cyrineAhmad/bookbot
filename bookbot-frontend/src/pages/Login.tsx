@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -12,22 +13,21 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { signInWithGoogle } = useAuth();
+  const navigate = useNavigate();
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    
+    if (!email || !password) {
+      setError("Please enter both email and password");
+      setLoading(false);
+      return;
+    }
+    
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) setError(error.message);
-    setLoading(false);
-  };
-
-  const handleSignUp = async () => {
-    setLoading(true);
-    setError("");
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) setError(error.message);
-    else setError("Check your email for a confirmation link!");
     setLoading(false);
   };
 
@@ -46,6 +46,8 @@ const Login = () => {
           {error && (
             <div className="text-sm text-red-500 bg-red-50 p-3 rounded-lg">{error}</div>
           )}
+          
+          <form onSubmit={handleEmailLogin} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <div className="relative">
@@ -60,9 +62,11 @@ const Login = () => {
               <Input id="password" type="password" placeholder="••••••••" className="pl-10" value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
           </div>
-          <Button className="w-full" onClick={handleEmailLogin} disabled={loading}>
+          
+          <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Signing in..." : "Sign In"}
           </Button>
+          </form>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center"><div className="w-full border-t" /></div>
@@ -76,7 +80,7 @@ const Login = () => {
 
         <p className="text-center text-sm text-muted-foreground">
           Don't have an account?{" "}
-          <span className="font-medium text-primary cursor-pointer hover:underline" onClick={handleSignUp}>
+          <span className="font-medium text-primary cursor-pointer hover:underline" onClick={() => navigate("/signup")}>
             Sign up
           </span>
         </p>

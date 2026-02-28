@@ -119,7 +119,6 @@ const BookDetails = () => {
       const updated = await bookService.getById(id);
       if (updated) {
         setBook(updated);
-        console.log("Book updated after borrow:", updated);
       }
       
       setBorrowOpen(false);

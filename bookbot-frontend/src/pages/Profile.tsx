@@ -12,7 +12,6 @@ const Profile = () => {
     full_name: string | null;
     email: string | null;
     role: string;
-    avatar_url: string | null;
   } | null>(null);
 
   useEffect(() => {

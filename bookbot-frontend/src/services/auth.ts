@@ -21,7 +21,6 @@ export const authService = {
     email: string | null;
     full_name: string | null;
     role: string;
-    avatar_url: string | null;
   } | null> => {
     try {
       const { data } = await api.get("/api/auth/profile");

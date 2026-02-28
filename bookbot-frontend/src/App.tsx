@@ -11,6 +11,7 @@ import Books from "./pages/Books";
 import BookDetails from "./pages/BookDetails";
 import AIAssistant from "./pages/AIAssistant";
 import Login from "./pages/Login";
+import SignUp from "./pages/SignUp";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
@@ -28,6 +29,7 @@ const AppRoutes = () => {
       <Navbar />
       <Routes>
         <Route path="/login" element={user ? <Navigate to="/books" /> : <Login />} />
+        <Route path="/signup" element={user ? <Navigate to="/books" /> : <SignUp />} />
         <Route path="/" element={<Navigate to="/books" />} />
         <Route path="/books" element={<ProtectedRoute><Books /></ProtectedRoute>} />
         <Route path="/books/:id" element={<ProtectedRoute><BookDetails /></ProtectedRoute>} />
