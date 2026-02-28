@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, BookOpen, Sparkles, MessageSquare, Calendar, Hash, User, Tag, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, BookOpen, Sparkles, MessageSquare, Calendar, Hash, Tag, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import StatusBadge from "@/components/StatusBadge";
 import { bookService, aiService, authService } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
@@ -20,6 +21,7 @@ const BookDetails = () => {
   const { user } = useAuth();
 
   const [book, setBook] = useState<Book | null>(null);
+  const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userId, setUserId] = useState<string>("");
 
@@ -35,7 +37,6 @@ const BookDetails = () => {
   const [borrowLoading, setBorrowLoading] = useState(false);
   const [returnLoading, setReturnLoading] = useState(false);
   const [activeBorrowingId, setActiveBorrowingId] = useState<string>("");
-  const [borrowerName, setBorrowerName] = useState<string>("");
   const [dueDate, setDueDate] = useState<string>("");
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
 
@@ -50,7 +51,13 @@ const BookDetails = () => {
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
-    if (id) bookService.getById(id).then((b) => b && setBook(b));
+    if (id) {
+      setLoading(true);
+      bookService.getById(id).then((b) => {
+        if (b) setBook(b);
+        setLoading(false);
+      }).catch(() => setLoading(false));
+    }
   }, [id]);
 
   useEffect(() => {
@@ -61,7 +68,7 @@ const BookDetails = () => {
     setUserId(user.id);
   }, [user]);
 
-  // Always fetch active borrowing on load
+  // Fetch active borrowing on load
   useEffect(() => {
     if (!id || !user) return;
     api.get("/api/borrowings").then((res) => {
@@ -69,7 +76,6 @@ const BookDetails = () => {
         id: string;
         book_id: string;
         status: string;
-        borrower_name: string | null;
         due_date: string | null;
         user_id: string;
       }>;
@@ -78,7 +84,6 @@ const BookDetails = () => {
       );
       if (active) {
         setActiveBorrowingId(active.id);
-        setBorrowerName(active.borrower_name || "Unknown");
         if (active.due_date) {
           const due = new Date(active.due_date);
           const today = new Date();
@@ -97,11 +102,10 @@ const BookDetails = () => {
       const borrowing = await bookService.borrow(id, userId, "") as {
         id: string;
         due_date: string | null;
-        borrower_name: string | null;
       };
+      
       if (borrowing?.id) {
         setActiveBorrowingId(borrowing.id);
-        setBorrowerName(borrowing.borrower_name || "You");
         if (borrowing.due_date) {
           const due = new Date(borrowing.due_date);
           const today = new Date();
@@ -110,11 +114,17 @@ const BookDetails = () => {
           setDaysLeft(diff);
         }
       }
+      
+      // Refresh book data to get updated status
       const updated = await bookService.getById(id);
-      if (updated) setBook(updated);
+      if (updated) {
+        setBook(updated);
+        console.log("Book updated after borrow:", updated);
+      }
+      
       setBorrowOpen(false);
-    } catch {
-      console.error("Failed to borrow book");
+    } catch (error) {
+      console.error("Failed to borrow book:", error);
     }
     setBorrowLoading(false);
   };
@@ -127,7 +137,6 @@ const BookDetails = () => {
       const updated = await bookService.getById(id!);
       if (updated) setBook(updated);
       setActiveBorrowingId("");
-      setBorrowerName("");
       setDueDate("");
       setDaysLeft(null);
     } catch {
@@ -199,6 +208,39 @@ const BookDetails = () => {
     setLoadingAsk(false);
   };
 
+  if (loading) {
+    return (
+      <div className="container py-8 space-y-6">
+        <Link to="/books" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="h-4 w-4" /> Back to Books
+        </Link>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="rounded-xl border bg-card p-6 card-shadow">
+              <div className="flex gap-6 mb-6">
+                <Skeleton className="h-36 w-24 shrink-0 rounded-xl" />
+                <div className="flex-1 space-y-3">
+                  <Skeleton className="h-7 w-3/4" />
+                  <Skeleton className="h-5 w-1/2" />
+                  <Skeleton className="h-16 w-full" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[...Array(4)].map((_, i) => (
+                  <Skeleton key={i} className="h-20 rounded-lg" />
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <Skeleton className="h-32 rounded-xl" />
+            <Skeleton className="h-48 rounded-xl" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!book) {
     return (
       <div className="container py-20 text-center">
@@ -226,28 +268,28 @@ const BookDetails = () => {
     "bg-secondary/50";
 
   return (
-    <div className="container py-8 space-y-6">
+    <div className="container py-4 px-4 sm:py-8 space-y-4 sm:space-y-6">
       <Link to="/books" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
         <ArrowLeft className="h-4 w-4" /> Back to Books
       </Link>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3 lg:items-start">
         {/* Book Info */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="rounded-xl border bg-card p-6 card-shadow">
+        <div className="lg:col-span-2 flex flex-col">
+          <div className="rounded-xl border bg-card p-4 sm:p-6 card-shadow flex-1">
 
             {/* Cover + Title */}
-            <div className="flex gap-6 mb-6">
-              <div className="shrink-0">
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6">
+              <div className="shrink-0 mx-auto sm:mx-0">
                 {book.coverUrl ? (
                   <img
                     src={book.coverUrl}
                     alt={book.title}
-                    className="h-36 w-24 rounded-xl object-cover border"
+                    className="h-48 sm:h-36 w-auto rounded-xl object-cover border"
                   />
                 ) : (
-                  <div className="h-36 w-24 rounded-xl border bg-secondary/50 flex items-center justify-center">
-                    <BookOpen className="h-8 w-8 text-muted-foreground opacity-30" />
+                  <div className="h-48 sm:h-36 w-32 sm:w-24 rounded-xl border bg-secondary/50 flex items-center justify-center">
+                    <BookOpen className="h-10 sm:h-8 w-10 sm:w-8 text-muted-foreground opacity-30" />
                   </div>
                 )}
               </div>
@@ -266,16 +308,11 @@ const BookDetails = () => {
             </div>
 
             {/* Metadata */}
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {[
                 { icon: Tag, label: "Genre", value: book.genre || "—" },
                 { icon: Hash, label: "ISBN", value: book.isbn || "—" },
                 { icon: Calendar, label: "Added", value: new Date(book.addedAt).toLocaleDateString() },
-                {
-                  icon: User,
-                  label: "Borrowed by",
-                  value: book.status === "borrowed" ? (borrowerName || "...") : "—"
-                },
               ].map((item) => (
                 <div key={item.label} className="rounded-lg bg-secondary/50 p-3">
                   <div className="flex items-center gap-1.5 mb-1">
@@ -363,9 +400,9 @@ const BookDetails = () => {
         </div>
 
         {/* AI Features */}
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4 lg:h-full">
           {/* Generate Summary */}
-          <div className="rounded-xl border bg-card p-5 card-shadow">
+          <div className="rounded-xl border bg-card p-5 card-shadow flex-1 flex flex-col">
             <div className="flex items-center gap-2 mb-3">
               <div className="ai-gradient flex h-8 w-8 items-center justify-center rounded-lg">
                 <Sparkles className="h-4 w-4 text-primary-foreground" />
@@ -373,24 +410,26 @@ const BookDetails = () => {
               <h3 className="text-sm font-semibold text-card-foreground">AI Summary</h3>
             </div>
             {summary ? (
-              <p className="text-sm leading-relaxed text-muted-foreground">{summary}</p>
+              <p className="text-sm leading-relaxed text-muted-foreground flex-1">{summary}</p>
             ) : (
-              <Button variant="outline" size="sm" className="w-full gap-2" onClick={generateSummary} disabled={loadingSummary}>
-                <Sparkles className="h-3.5 w-3.5" />
-                {loadingSummary ? "Generating..." : "Generate AI Summary"}
-              </Button>
+              <div className="flex-1 flex items-center">
+                <Button variant="outline" size="sm" className="w-full gap-2" onClick={generateSummary} disabled={loadingSummary}>
+                  <Sparkles className="h-3.5 w-3.5" />
+                  {loadingSummary ? "Generating..." : "Generate AI Summary"}
+                </Button>
+              </div>
             )}
           </div>
 
           {/* Ask AI */}
-          <div className="rounded-xl border bg-card p-5 card-shadow">
+          <div className="rounded-xl border bg-card p-5 card-shadow flex-1 flex flex-col">
             <div className="flex items-center gap-2 mb-3">
               <div className="ai-gradient flex h-8 w-8 items-center justify-center rounded-lg">
                 <MessageSquare className="h-4 w-4 text-primary-foreground" />
               </div>
               <h3 className="text-sm font-semibold text-card-foreground">Ask AI About This Book</h3>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-3 flex-1 flex flex-col">
               <input
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
@@ -403,7 +442,7 @@ const BookDetails = () => {
                 {loadingAsk ? "Thinking..." : "Ask AI"}
               </Button>
               {aiAnswer && (
-                <div className="rounded-lg bg-secondary/50 p-3">
+                <div className="rounded-lg bg-secondary/50 p-3 flex-1">
                   <p className="text-sm leading-relaxed text-secondary-foreground">{aiAnswer}</p>
                 </div>
               )}

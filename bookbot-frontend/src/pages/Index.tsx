@@ -1,31 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, CheckCircle, Clock, Sparkles, Bot } from "lucide-react";
+import { BookOpen, Bot, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { bookService, statsService, aiService } from "@/services/api";
-import { DashboardStats } from "@/types/book";
+import { aiService } from "@/services/api";
 
 const Index = () => {
-  const [stats, setStats] = useState<DashboardStats>({
-    totalBooks: 0,
-    available: 0,
-    borrowed: 0,
-    reserved: 0,
-    lost: 0,
-    maintenance: 0,
-    aiInsights: 0,
-  });
   const [insights, setInsights] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [loadedStats, loadedInsights] = await Promise.all([
-          statsService.getDashboardStats(),
-          aiService.getInsights(),
-        ]);
-        setStats(loadedStats);
+        const loadedInsights = await aiService.getInsights();
         setInsights(Array.isArray(loadedInsights)
           ? loadedInsights
           : (loadedInsights as string).split("\n").filter((l: string) => l.trim()).slice(0, 3)
@@ -39,115 +25,70 @@ const Index = () => {
 
   return (
     <div className="container py-8 space-y-8">
-      {/* Header */}
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
-          <p className="mt-1 text-muted-foreground">Welcome back! Here's your library overview.</p>
+      <div className="text-center max-w-2xl mx-auto space-y-4">
+        <div className="mx-auto mb-4 ai-gradient flex h-16 w-16 items-center justify-center rounded-2xl">
+          <BookOpen className="h-8 w-8 text-primary-foreground" />
         </div>
+        <h1 className="text-4xl font-bold tracking-tight text-foreground">
+          Welcome to Book<span className="ai-gradient-text">Bot</span>
+        </h1>
+        <p className="text-lg text-muted-foreground">
+          Discover, explore, and manage your library with AI-powered assistance
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 max-w-4xl mx-auto">
         <Link to="/books">
-          <Button className="gap-2">
-            <BookOpen className="h-4 w-4" /> Browse Books
-          </Button>
+          <div className="flex items-start gap-4 rounded-xl border bg-card p-6 hover:bg-secondary/30 transition-all cursor-pointer card-shadow hover:shadow-lg">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 shrink-0">
+              <BookOpen className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-lg font-semibold text-foreground mb-1">Browse Books</p>
+              <p className="text-sm text-muted-foreground">Explore our collection and find your next read</p>
+            </div>
+          </div>
+        </Link>
+        
+        <Link to="/ai-assistant">
+          <div className="flex items-start gap-4 rounded-xl border bg-card p-6 hover:bg-secondary/30 transition-all cursor-pointer card-shadow hover:shadow-lg">
+            <div className="ai-gradient flex h-12 w-12 items-center justify-center rounded-xl shrink-0">
+              <Bot className="h-6 w-6 text-primary-foreground" />
+            </div>
+            <div>
+              <p className="text-lg font-semibold text-foreground mb-1">AI Assistant</p>
+              <p className="text-sm text-muted-foreground">Get personalized book recommendations</p>
+            </div>
+          </div>
         </Link>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border bg-card p-5 card-shadow">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-              <BookOpen className="h-5 w-5 text-primary" />
-            </div>
-            <span className="text-sm font-medium text-muted-foreground">Total Books</span>
+      <div className="max-w-2xl mx-auto rounded-xl border bg-card p-6 card-shadow">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="ai-gradient flex h-10 w-10 items-center justify-center rounded-xl">
+            <Sparkles className="h-5 w-5 text-primary-foreground" />
           </div>
-          <p className="text-3xl font-bold text-foreground">{loading ? "—" : stats.totalBooks}</p>
-          <p className="text-xs text-muted-foreground mt-1">In your library</p>
+          <h2 className="text-xl font-semibold text-foreground">AI Reading Tips</h2>
         </div>
-
-        <div className="rounded-xl border bg-card p-5 card-shadow">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-500/10">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-            </div>
-            <span className="text-sm font-medium text-muted-foreground">Available</span>
-          </div>
-          <p className="text-3xl font-bold text-foreground">{loading ? "—" : stats.available}</p>
-          <p className="text-xs text-muted-foreground mt-1">Ready to borrow</p>
-        </div>
-
-        <div className="rounded-xl border bg-card p-5 card-shadow">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-500/10">
-              <Clock className="h-5 w-5 text-orange-500" />
-            </div>
-            <span className="text-sm font-medium text-muted-foreground">Borrowed</span>
-          </div>
-          <p className="text-3xl font-bold text-foreground">{loading ? "—" : stats.borrowed}</p>
-          <p className="text-xs text-muted-foreground mt-1">Currently checked out</p>
-        </div>
-      </div>
-
-      {/* Main content */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-
-        {/* Quick Actions */}
-        <div className="lg:col-span-2 rounded-xl border bg-card p-6 card-shadow">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Link to="/books">
-              <div className="flex items-center gap-4 rounded-xl border p-4 hover:bg-secondary/50 transition-colors cursor-pointer">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  <BookOpen className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Browse Books</p>
-                  <p className="text-xs text-muted-foreground">View and manage the library</p>
-                </div>
+        <div className="space-y-3">
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Loading insights...</p>
+          ) : insights.length > 0 ? (
+            insights.slice(0, 3).map((insight, i) => (
+              <div key={i} className="flex items-start gap-3 rounded-lg bg-secondary/50 p-4">
+                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <p className="text-sm leading-relaxed text-foreground">{insight}</p>
               </div>
-            </Link>
-            <Link to="/ai-assistant">
-              <div className="flex items-center gap-4 rounded-xl border p-4 hover:bg-secondary/50 transition-colors cursor-pointer">
-                <div className="ai-gradient flex h-10 w-10 items-center justify-center rounded-lg">
-                  <Bot className="h-5 w-5 text-primary-foreground" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">AI Assistant</p>
-                  <p className="text-xs text-muted-foreground">Get book recommendations</p>
-                </div>
-              </div>
-            </Link>
-          </div>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground">No insights available</p>
+          )}
         </div>
-
-        {/* AI Insights */}
-        <div className="rounded-xl border bg-card p-5 card-shadow">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="ai-gradient flex h-8 w-8 items-center justify-center rounded-lg">
-              <Sparkles className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <h2 className="text-sm font-semibold text-foreground">AI Reading Tips</h2>
-          </div>
-          <div className="space-y-3">
-            {loading ? (
-              <p className="text-sm text-muted-foreground">Loading insights...</p>
-            ) : insights.length > 0 ? (
-              insights.slice(0, 3).map((insight, i) => (
-                <div key={i} className="flex items-start gap-2 rounded-lg bg-secondary/50 p-3">
-                  <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                  <p className="text-xs leading-relaxed text-secondary-foreground">{insight}</p>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">No insights available</p>
-            )}
-          </div>
-          <Link to="/ai-assistant">
-            <Button variant="outline" size="sm" className="w-full gap-2 mt-4">
-              <Bot className="h-4 w-4" /> Open AI Assistant
-            </Button>
-          </Link>
-        </div>
+        <Link to="/ai-assistant">
+          <Button variant="outline" size="sm" className="w-full gap-2 mt-4">
+            <Bot className="h-4 w-4" /> Chat with AI Assistant
+          </Button>
+        </Link>
       </div>
     </div>
   );

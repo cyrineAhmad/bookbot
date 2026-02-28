@@ -27,8 +27,8 @@ const AppRoutes = () => {
     <>
       <Navbar />
       <Routes>
-        <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
-        <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/login" element={user ? <Navigate to="/books" /> : <Login />} />
+        <Route path="/" element={<Navigate to="/books" />} />
         <Route path="/books" element={<ProtectedRoute><Books /></ProtectedRoute>} />
         <Route path="/books/:id" element={<ProtectedRoute><BookDetails /></ProtectedRoute>} />
         <Route path="/ai-assistant" element={<ProtectedRoute><AIAssistant /></ProtectedRoute>} />

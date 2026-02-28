@@ -41,28 +41,30 @@ const AIAssistant = () => {
 
   return (
     <div className="container py-8">
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 ai-gradient flex h-14 w-14 items-center justify-center rounded-2xl">
+      <div className="mx-auto max-w-4xl space-y-6">
+        <div className="text-center">
+          <div className="mx-auto mb-4 ai-gradient flex h-14 w-14 items-center justify-center rounded-2xl">
             <Bot className="h-7 w-7 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">AI Assistant</h1>
-          <p className="mt-1 text-muted-foreground">Ask me anything about your library</p>
+          <h1 className="text-3xl font-bold text-foreground">AI Book Assistant</h1>
+          <p className="mt-2 text-muted-foreground">Get personalized recommendations and insights about books</p>
         </div>
 
         {/* Suggestion chips */}
-        <div className="mb-4 flex flex-wrap justify-center gap-2">
-          {suggestions.map((s) => (
-            <button
-              key={s.text}
-              onClick={() => sendMessage(s.text)}
-              className="flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-sm text-muted-foreground card-shadow hover:bg-secondary hover:text-foreground transition-colors"
-            >
-              <s.icon className="h-3.5 w-3.5" />
-              {s.text}
-            </button>
-          ))}
-        </div>
+        {messages.length <= 1 && (
+          <div className="flex flex-wrap justify-center gap-2">
+            {suggestions.map((s) => (
+              <button
+                key={s.text}
+                onClick={() => sendMessage(s.text)}
+                className="flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-sm text-muted-foreground card-shadow hover:bg-secondary hover:text-foreground transition-colors"
+              >
+                <s.icon className="h-3.5 w-3.5" />
+                {s.text}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Chat Window */}
         <div className="rounded-xl border bg-card card-shadow overflow-hidden flex flex-col" style={{ height: "500px" }}>
@@ -95,9 +97,9 @@ const AIAssistant = () => {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
               placeholder="Ask about books, recommendations..."
-              className="flex-1 rounded-xl border bg-background px-4 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="flex-1 rounded-xl border bg-background px-4 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
-            <Button onClick={() => sendMessage()} disabled={loading || !input.trim()} size="sm" className="rounded-xl px-4">
+            <Button onClick={() => sendMessage()} disabled={loading || !input.trim()} size="default" className="rounded-xl px-6">
               <Send className="h-4 w-4" />
             </Button>
           </div>

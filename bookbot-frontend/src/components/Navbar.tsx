@@ -1,10 +1,10 @@
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { BookOpen, LayoutDashboard, Bot, User } from "lucide-react";
+import { BookOpen, Bot, User, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 
 const navItems = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/books", label: "Books", icon: BookOpen },
   { to: "/ai-assistant", label: "AI Assistant", icon: Bot },
 ];
@@ -13,6 +13,7 @@ const Navbar = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -23,7 +24,7 @@ const Navbar = () => {
     <header className="sticky top-0 z-50 glass border-b">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-8">
-          <Link to="/" className="flex items-center gap-2.5">
+          <Link to="/books" className="flex items-center gap-2.5">
             <div className="ai-gradient flex h-9 w-9 items-center justify-center rounded-lg">
               <BookOpen className="h-5 w-5 text-primary-foreground" />
             </div>
@@ -54,19 +55,27 @@ const Navbar = () => {
         <div className="flex items-center gap-2">
           {user ? (
             <>
-              <Link to="/profile">
+              <Link to="/profile" className="hidden sm:block">
                 <Button variant="ghost" size="sm" className="gap-2">
                   <User className="h-4 w-4" />
-                  <span className="hidden sm:inline">Profile</span>
+                  <span>Profile</span>
                 </Button>
               </Link>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleSignOut}
-                className="text-muted-foreground hover:text-foreground"
+                className="hidden sm:flex text-muted-foreground hover:text-foreground"
               >
                 Sign Out
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden"
+              >
+                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </Button>
             </>
           ) : (
@@ -76,6 +85,49 @@ const Navbar = () => {
           )}
         </div>
       </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && user && (
+        <div className="md:hidden border-t bg-card">
+          <nav className="container py-4 space-y-1">
+            {navItems.map((item) => {
+              const active = location.pathname === item.to;
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-colors ${
+                    active
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  }`}
+                >
+                  <item.icon className="h-5 w-5" />
+                  {item.label}
+                </Link>
+              );
+            })}
+            <Link
+              to="/profile"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+            >
+              <User className="h-5 w-5" />
+              Profile
+            </Link>
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                handleSignOut();
+              }}
+              className="w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
+            >
+              Sign Out
+            </button>
+          </nav>
+        </div>
+      )}
     </header>
   );
 };

@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { Search, Plus, Filter, LayoutGrid, List, Sparkles, BookOpen, Pencil, Trash2 } from "lucide-react";
+import { useLocation } from "react-router-dom";
+import { Search, Plus, Filter, LayoutGrid, List, Sparkles, BookOpen, Pencil, Trash2, CheckCircle, Clock, AlertCircle, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BookCard from "@/components/BookCard";
 import StatusBadge from "@/components/StatusBadge";
-import { bookService, authService, aiService } from "@/services/api";
+import { Skeleton } from "@/components/ui/skeleton";
+import { bookService, authService, aiService, statsService } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
-import { Book } from "@/types/book";
+import { Book, DashboardStats } from "@/types/book";
 import { Link } from "react-router-dom";
 import { uploadBookCover } from "@/lib/storage";
 import {
@@ -26,11 +28,22 @@ const emptyBook = {
 
 const Books = () => {
   const [books, setBooks] = useState<Book[]>([]);
+  const [booksLoading, setBooksLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [genreFilter, setGenreFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalBooks: 0,
+    available: 0,
+    borrowed: 0,
+    reserved: 0,
+    lost: 0,
+    maintenance: 0,
+    aiInsights: 0,
+  });
 
   // Add book state
   const [addOpen, setAddOpen] = useState(false);
@@ -53,15 +66,47 @@ const Books = () => {
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const { user } = useAuth();
+  const location = useLocation();
+
+  // Helper function to calculate stats from books
+  const calculateStats = (booksList: Book[]) => {
+    return {
+      totalBooks: booksList.length,
+      available: booksList.filter(b => b.status === 'available').length,
+      borrowed: booksList.filter(b => b.status === 'borrowed').length,
+      reserved: booksList.filter(b => b.status === 'reserved').length,
+      lost: booksList.filter(b => b.status === 'lost').length,
+      maintenance: booksList.filter(b => b.status === 'maintenance').length,
+      aiInsights: 0,
+    };
+  };
+
+  // Function to load/refresh books
+  const loadBooks = async () => {
+    setBooksLoading(true);
+    const loadedBooks = await bookService.getAll();
+    setBooks(loadedBooks);
+    setStats(calculateStats(loadedBooks));
+    setStatsLoading(false);
+    setBooksLoading(false);
+  };
 
   useEffect(() => {
-    bookService.getAll().then(setBooks);
+    loadBooks();
   }, []);
+
+  // Refresh books when navigating back to this page
+  useEffect(() => {
+    if (location.pathname === '/books') {
+      loadBooks();
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     if (!user) return;
     authService.getProfile().then((p) => {
-      setIsAdmin(p?.role === "admin" || p?.role === "librarian");
+      const adminRole = p?.role === "admin" || p?.role === "librarian";
+      setIsAdmin(adminRole);
     });
   }, [user]);
 
@@ -122,8 +167,7 @@ const Books = () => {
         cover_url: coverUrl,
       });
 
-      const updated = await bookService.getAll();
-      setBooks(updated);
+      await loadBooks();
       setAddOpen(false);
       setNewBook(emptyBook);
       setCoverFile(null);
@@ -168,8 +212,7 @@ const Books = () => {
         coverUrl: coverUrl,
       });
 
-      const updated = await bookService.getAll();
-      setBooks(updated);
+      await loadBooks();
       setEditOpen(false);
       setEditingBook(null);
     } catch {
@@ -183,7 +226,7 @@ const Books = () => {
     if (!deleteId) return;
     try {
       await bookService.delete(deleteId);
-      setBooks(prev => prev.filter(b => b.id !== deleteId));
+      await loadBooks();
       setDeleteOpen(false);
       setDeleteId(null);
     } catch {
@@ -230,13 +273,68 @@ const Books = () => {
   );
 
   return (
-    <div className="container py-8 space-y-6">
-      <div className="flex items-end justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Books</h1>
-          <p className="mt-1 text-muted-foreground">{filtered.length} books in your library</p>
+    <div className="container py-4 px-4 sm:py-8 space-y-4 sm:space-y-6">
+      {/* Admin Analytics */}
+      {isAdmin && (
+        <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
+          {/* Total Books Card */}
+          <div className="rounded-xl border bg-card p-5 card-shadow">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                <BookOpen className="h-5 w-5 text-primary" />
+              </div>
+              <span className="text-sm font-medium text-muted-foreground">Total Books</span>
+            </div>
+            {statsLoading ? (
+              <Skeleton className="h-9 w-16 mb-1" />
+            ) : (
+              <p className="text-3xl font-bold text-foreground">{stats.totalBooks}</p>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">In your library</p>
+          </div>
+
+          {/* Available Books Card */}
+          <div className="rounded-xl border bg-card p-5 card-shadow">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-500/10">
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              </div>
+              <span className="text-sm font-medium text-muted-foreground">Available</span>
+            </div>
+            {statsLoading ? (
+              <Skeleton className="h-9 w-16 mb-1" />
+            ) : (
+              <p className="text-3xl font-bold text-foreground">{stats.available}</p>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">Ready to borrow</p>
+          </div>
+
+          {/* Borrowed Books Card */}
+          <div className="rounded-xl border bg-card p-5 card-shadow">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-500/10">
+                <Clock className="h-5 w-5 text-orange-500" />
+              </div>
+              <span className="text-sm font-medium text-muted-foreground">Borrowed</span>
+            </div>
+            {statsLoading ? (
+              <Skeleton className="h-9 w-16 mb-1" />
+            ) : (
+              <p className="text-3xl font-bold text-foreground">{stats.borrowed}</p>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">Currently checked out</p>
+          </div>
         </div>
-        {isAdmin && (
+      )}
+
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            {isAdmin ? "Manage Books" : "Browse Books"}
+          </h1>
+          <p className="mt-1 text-muted-foreground">{filtered.length} books available</p>
+        </div>
+        {isAdmin ? (
           <Dialog open={addOpen} onOpenChange={setAddOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2"><Plus className="h-4 w-4" /> Add Book</Button>
@@ -308,22 +406,28 @@ const Books = () => {
               </div>
             </DialogContent>
           </Dialog>
+        ) : (
+          <Link to="/ai-assistant">
+            <Button className="gap-2">
+              <Bot className="h-4 w-4" /> Ask AI for Recommendations
+            </Button>
+          </Link>
         )}
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[240px]">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div className="relative flex-1 min-w-[200px] sm:min-w-[240px]">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by title, author, or ISBN..."
+            placeholder="Search books..."
             className="w-full rounded-xl border bg-card py-2.5 pl-10 pr-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring card-shadow"
           />
         </div>
         <Select value={genreFilter} onValueChange={setGenreFilter}>
-          <SelectTrigger className="w-[160px] rounded-xl card-shadow">
+          <SelectTrigger className="w-[140px] sm:w-[160px] rounded-xl card-shadow">
             <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
             <SelectValue />
           </SelectTrigger>
@@ -332,7 +436,7 @@ const Books = () => {
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[140px] rounded-xl card-shadow">
+          <SelectTrigger className="w-[120px] sm:w-[140px] rounded-xl card-shadow">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -340,17 +444,30 @@ const Books = () => {
           </SelectContent>
         </Select>
         <div className="flex rounded-xl border card-shadow">
-          <button onClick={() => setViewMode("grid")} className={`rounded-l-xl p-2.5 ${viewMode === "grid" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary"}`}>
+          <button onClick={() => setViewMode("grid")} className={`rounded-l-xl p-2 sm:p-2.5 ${viewMode === "grid" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary"}`}>
             <LayoutGrid className="h-4 w-4" />
           </button>
-          <button onClick={() => setViewMode("list")} className={`rounded-r-xl p-2.5 ${viewMode === "list" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary"}`}>
+          <button onClick={() => setViewMode("list")} className={`rounded-r-xl p-2 sm:p-2.5 ${viewMode === "list" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-secondary"}`}>
             <List className="h-4 w-4" />
           </button>
         </div>
       </div>
 
       {/* Book Grid/List */}
-      {filtered.length === 0 ? (
+      {booksLoading ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="rounded-xl border bg-card overflow-hidden card-shadow">
+              <Skeleton className="h-80 sm:h-96 w-full" />
+              <div className="p-4 space-y-3">
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-6 w-20" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary">
             <Search className="h-7 w-7 text-muted-foreground" />
