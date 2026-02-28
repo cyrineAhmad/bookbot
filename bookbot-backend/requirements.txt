@@ -8,3 +8,5 @@ pydantic-settings
 supabase
 python-jose[cryptography]
 httpx
+groq
+passlib[bcrypt]
